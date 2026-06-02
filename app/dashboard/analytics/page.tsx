@@ -1,101 +1,53 @@
-"use client"
+import { redirect } from "next/navigation"
+import { auth } from "@/auth"
+import { prisma } from "@/database/prisma"
+import AnalyticsClient from "./AnalyticsClient"
 
-import * as React from "react"
-import { motion } from "framer-motion"
-import { BarChart3, TrendingUp, Eye, Users, MousePointerClick } from "lucide-react"
+export default async function AnalyticsPage() {
+  const session = await auth()
+  if (!session?.user?.email) {
+    redirect("/login")
+  }
 
-const fadeUp = (delay = 0) => ({
-  initial: { opacity: 0, y: 16 },
-  animate: { opacity: 1, y: 0 },
-  transition: { duration: 0.4, delay },
-})
+  const user = await prisma.user.findUnique({ where: { email: session.user.email } })
+  if (!user) {
+    redirect("/login")
+  }
 
-const mockData = [
-  { day: "Mon", views: 45 },
-  { day: "Tue", views: 82 },
-  { day: "Wed", views: 61 },
-  { day: "Thu", views: 120 },
-  { day: "Fri", views: 98 },
-  { day: "Sat", views: 175 },
-  { day: "Sun", views: 143 },
-]
+  // Fetch all events for the user
+  const events = await prisma.userEvent.findMany({
+    where: { userId: user.id },
+    select: { id: true, createdAt: true }
+  })
 
-const max = Math.max(...mockData.map(d => d.views))
+  // Fetch all guests (RSVPs) for these events
+  const guests = await prisma.guest.findMany({
+    where: { eventId: { in: events.map(e => e.id) } },
+    select: { createdAt: true }
+  })
 
-export default function AnalyticsPage() {
-  const [loading, setLoading] = React.useState(true)
-  const [stats, setStats] = React.useState({ events: 0, rsvps: 0 })
+  const stats = {
+    events: events.length,
+    rsvps: guests.length
+  }
 
-  React.useEffect(() => {
-    fetch("/api/events")
-      .then(r => r.json())
-      .then(d => {
-        if (d.events) {
-          const events = d.events.length
-          const rsvps = d.events.reduce((acc: number, ev: any) => acc + (ev._count?.guests ?? 0), 0)
-          setStats({ events, rsvps })
-        }
-      })
-      .finally(() => setLoading(false))
-  }, [])
+  // Generate chart data for the last 7 days (New RSVPs per day)
+  const chartData = []
+  const today = new Date()
+  
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(today)
+    d.setDate(today.getDate() - i)
+    d.setHours(0, 0, 0, 0)
+    
+    const nextDay = new Date(d)
+    nextDay.setDate(d.getDate() + 1)
 
-  return (
-    <div className="py-8 px-6 max-w-6xl mx-auto space-y-6">
-      <motion.div {...fadeUp(0)}>
-        <h1 className="text-2xl font-bold">Analytics</h1>
-        <p className="text-muted-foreground text-sm mt-0.5">Track views and engagement across all your events</p>
-      </motion.div>
+    const count = guests.filter(g => g.createdAt >= d && g.createdAt < nextDay).length
+    
+    const dayName = d.toLocaleDateString('en-US', { weekday: 'short' })
+    chartData.push({ day: dayName, views: count })
+  }
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {[
-          { icon: Eye, label: "Total Views", value: loading ? "-" : (stats.events * 145).toLocaleString(), change: "+12%", color: "text-primary", bg: "bg-primary/10" },
-          { icon: Users, label: "Total RSVPs", value: loading ? "-" : stats.rsvps, change: "Real time", color: "text-emerald-600", bg: "bg-emerald-500/10" },
-          { icon: MousePointerClick, label: "Live Events", value: loading ? "-" : stats.events, change: "Active", color: "text-violet-600", bg: "bg-violet-500/10" },
-          { icon: TrendingUp, label: "Avg. Views/Day", value: loading ? "-" : Math.round(stats.events * 12.5), change: "+5%", color: "text-amber-600", bg: "bg-amber-500/10" },
-        ].map(({ icon: Icon, label, value, change, color, bg }, i) => (
-          <motion.div key={label} {...fadeUp(i * 0.07)} className="bg-card rounded-2xl border p-5">
-            <div className={`w-10 h-10 rounded-xl ${bg} flex items-center justify-center mb-3`}>
-              <Icon className={`w-5 h-5 ${color}`} />
-            </div>
-            <p className="text-2xl font-bold">{value}</p>
-            <p className="text-xs text-muted-foreground mt-0.5">{label}</p>
-            <p className="text-xs text-emerald-600 mt-1">{change}</p>
-          </motion.div>
-        ))}
-      </div>
-
-      {/* Bar chart */}
-      <motion.div {...fadeUp(0.2)} className="bg-card rounded-2xl border p-6">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="font-semibold">Page Views (Last 7 Days)</h2>
-          <span className="text-xs text-muted-foreground bg-muted px-2.5 py-1 rounded-lg">This week</span>
-        </div>
-        <div className="flex items-end gap-3 h-40">
-          {mockData.map(({ day, views }) => (
-            <div key={day} className="flex-1 flex flex-col items-center gap-2">
-              <span className="text-xs text-muted-foreground">{views}</span>
-              <motion.div
-                initial={{ height: 0 }}
-                animate={{ height: `${(views / max) * 100}%` }}
-                transition={{ duration: 0.6, delay: 0.2 }}
-                className="w-full rounded-t-lg min-h-1"
-                style={{ background: "linear-gradient(to top, #e11d48, #f59e0b)" }}
-              />
-              <span className="text-xs text-muted-foreground">{day}</span>
-            </div>
-          ))}
-        </div>
-      </motion.div>
-
-      {/* Coming soon notice */}
-      <motion.div {...fadeUp(0.3)} className="bg-muted/30 border border-dashed rounded-2xl p-8 text-center">
-        <BarChart3 className="w-10 h-10 mx-auto mb-3 text-muted-foreground opacity-50" />
-        <p className="font-medium">Advanced Analytics Coming Soon</p>
-        <p className="text-sm text-muted-foreground mt-1">
-          Location insights, peak visit times, and device breakdown will be available in the next update.
-        </p>
-      </motion.div>
-    </div>
-  )
+  return <AnalyticsClient stats={stats} chartData={chartData} />
 }

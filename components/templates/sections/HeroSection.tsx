@@ -51,11 +51,11 @@ function Countdown({ targetDate }: { targetDate: string }) {
 export function HeroSection({ data, theme }: Props) {
   const formattedDate = data.date
     ? new Date(data.date).toLocaleDateString("en-US", {
-        weekday: "long",
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-      })
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    })
     : ""
 
   return (
@@ -74,79 +74,79 @@ export function HeroSection({ data, theme }: Props) {
       )}
 
       {/* Overlay */}
-      <div className="absolute inset-0 bg-black/45" />
+      <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/20 to-black/60" />
 
       {/* Decorative elements */}
-      <div className="absolute top-0 left-0 w-64 h-64 rounded-full opacity-10 blur-3xl"
+      <div className="absolute top-0 left-0 w-64 h-64 rounded-full opacity-20 blur-3xl"
         style={{ backgroundColor: theme.primaryColor }} />
-      <div className="absolute bottom-0 right-0 w-80 h-80 rounded-full opacity-10 blur-3xl"
+      <div className="absolute bottom-0 right-0 w-80 h-80 rounded-full opacity-20 blur-3xl"
         style={{ backgroundColor: theme.secondaryColor }} />
 
       {/* Content */}
-      <div className="relative z-10 text-center text-white px-6 py-20 max-w-3xl mx-auto">
-        {/* Divider ornament */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 1 }}
-          className="text-4xl mb-6 select-none"
+      <div className="relative z-10 text-center text-white px-4 sm:px-6 py-12 sm:py-20 max-w-5xl mx-auto w-full flex flex-col items-center justify-center min-h-[80vh]">
+        <motion.h1
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.1 }}
+          className="text-3xl sm:text-5xl md:text-7xl lg:text-8xl font-bold mb-6 sm:mb-12 tracking-wide text-center bg-clip-text text-transparent bg-gradient-to-r from-primary to-secondary leading-snug px-2"
+          style={{
+            fontFamily: theme.fontFamily
+          }}
         >
-          ❋
-        </motion.div>
+          {data.title}
+        </motion.h1>
 
         {(data.boyName || data.girlName) && (
           <motion.h2
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.1 }}
-            className="text-4xl md:text-6xl font-bold mb-2 tracking-wide"
+            transition={{ duration: 0.8, delay: 0.3 }}
+            className="flex flex-col items-center justify-center mb-8 sm:mb-12"
             style={{ fontFamily: theme.fontFamily }}
           >
-            {data.boyName} &amp; {data.girlName}
+            <span className="text-4xl sm:text-5xl md:text-6xl font-bold text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)] tracking-wide">
+              {data.boyName}
+            </span>
+            <div className="flex items-center justify-center -space-x-1 my-2">
+              <span className="text-2xl drop-shadow-md text-primary">♡</span>
+              <span className="text-2xl drop-shadow-md text-primary">♡</span>
+            </div>
+            <span className="text-4xl sm:text-5xl md:text-6xl font-bold text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)] tracking-wide">
+              {data.girlName}
+            </span>
           </motion.h2>
         )}
-
-        <motion.h1
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.2 }}
-          className="text-5xl md:text-7xl font-bold mb-4 leading-tight tracking-tight"
-          style={{ fontFamily: theme.fontFamily }}
-        >
-          {data.title}
-        </motion.h1>
 
         {data.subtitle && (
           <motion.p
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.4 }}
-            className="text-xl md:text-2xl text-white/80 mb-8"
+            className="text-xl sm:text-2xl font-medium text-white mb-6 drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]"
           >
             {data.subtitle}
           </motion.p>
         )}
+
+        {/* Decorative Frame Divider */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.8, delay: 0.5 }}
+          className="w-full max-w-sm mx-auto h-16 border-t-2 border-b-2 border-white/60 mb-8 relative flex items-center justify-center"
+        >
+          <div className="absolute -left-3 top-1/2 -translate-y-1/2 w-6 h-6 border-2 border-white/60 rounded-full bg-transparent" />
+          <div className="absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-6 border-2 border-white/60 rounded-full bg-transparent" />
+        </motion.div>
 
         {formattedDate && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.6 }}
-            className="flex items-center justify-center gap-2 text-white/70 mb-10"
+            className="flex flex-col items-center justify-center gap-1 text-white mb-10 drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]"
           >
-            <Calendar className="w-4 h-4" />
-            <span className="text-sm tracking-widest uppercase">{formattedDate}</span>
-          </motion.div>
-        )}
-
-        {data.showCountdown && data.date && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.8 }}
-            className="mb-10"
-          >
-            <Countdown targetDate={data.date} />
+            <span className="text-xl sm:text-2xl font-bold tracking-wide">{formattedDate}</span>
           </motion.div>
         )}
 
@@ -155,10 +155,10 @@ export function HeroSection({ data, theme }: Props) {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 1 }}
           href="#rsvp"
-          className="inline-flex items-center gap-2 px-8 py-4 rounded-full text-sm font-semibold tracking-wide uppercase shadow-lg transition-transform hover:scale-105"
-          style={{ backgroundColor: theme.primaryColor, color: "#fff" }}
+          className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-md text-sm font-semibold text-gray-800 bg-white shadow-xl hover:bg-gray-100 transition-colors mt-4"
         >
-          RSVP Now
+          <Calendar className="w-4 h-4" />
+          <span>Add to Calendar</span>
         </motion.a>
       </div>
 
@@ -167,10 +167,11 @@ export function HeroSection({ data, theme }: Props) {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1, y: [0, 8, 0] }}
         transition={{ duration: 1.5, repeat: Infinity, delay: 2 }}
-        className="absolute bottom-8 left-1/2 -translate-x-1/2 text-white/40 text-xs flex flex-col items-center gap-1"
+        className="absolute bottom-6 left-6 text-white"
       >
-        <span className="text-[10px] tracking-widest uppercase">Scroll</span>
-        <span>↓</span>
+        <svg className="w-8 h-8 drop-shadow-md" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M19 9l-7 7-7-7" />
+        </svg>
       </motion.div>
     </section>
   )

@@ -3,7 +3,7 @@
 import * as React from "react"
 import { motion } from "framer-motion"
 import { useSession } from "next-auth/react"
-import { User, Lock, Bell, Globe, Palette, Shield, Loader2, Check } from "lucide-react"
+import { User, Bell, Shield, Loader2, Check } from "lucide-react"
 
 const fadeUp = (delay = 0) => ({
   initial: { opacity: 0, y: 16 },
@@ -45,21 +45,44 @@ function Toggle({ defaultOn = false }: { defaultOn?: boolean }) {
 }
 
 export default function SettingsPage() {
-  const { data: session } = useSession()
-  const [name, setName] = React.useState(session?.user?.name ?? "")
+  const { data: session, update } = useSession()
+  const [name, setName] = React.useState("")
   const [saved, setSaved] = React.useState(false)
   const [saving, setSaving] = React.useState(false)
+  const [error, setError] = React.useState<string | null>(null)
 
+  // Load real name from API once session is ready
   React.useEffect(() => {
-    if (session?.user?.name) setName(session.user.name)
-  }, [session])
+    if (!session?.user?.email) return
+    fetch("/api/user")
+      .then(r => r.json())
+      .then(d => { if (d.user?.name) setName(d.user.name) })
+  }, [session?.user?.email])
 
   const handleSave = async () => {
+    if (!name.trim()) return
     setSaving(true)
-    await new Promise(r => setTimeout(r, 800)) // simulate save
-    setSaved(true)
-    setSaving(false)
-    setTimeout(() => setSaved(false), 2000)
+    setError(null)
+    try {
+      const res = await fetch("/api/user", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: name.trim() })
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        setError(data.error || "Failed to save")
+        return
+      }
+      // Update the session so the sidebar name refreshes
+      await update({ name: data.user.name })
+      setSaved(true)
+      setTimeout(() => setSaved(false), 2500)
+    } catch {
+      setError("Network error. Please try again.")
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
@@ -84,17 +107,29 @@ export default function SettingsPage() {
           <div className="space-y-4">
             <div>
               <label className="text-xs uppercase tracking-wider text-muted-foreground block mb-1.5">Full Name</label>
-              <input type="text" value={name} onChange={e => setName(e.target.value)}
-                className="w-full px-4 py-2.5 rounded-xl border bg-muted/30 text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
+              <input
+                type="text"
+                value={name}
+                onChange={e => setName(e.target.value)}
+                className="w-full px-4 py-2.5 rounded-xl border bg-muted/30 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+              />
             </div>
             <div>
               <label className="text-xs uppercase tracking-wider text-muted-foreground block mb-1.5">Email</label>
-              <input type="email" value={session?.user?.email ?? ""} disabled
-                className="w-full px-4 py-2.5 rounded-xl border bg-muted/50 text-sm opacity-60 cursor-not-allowed" />
+              <input
+                type="email"
+                value={session?.user?.email ?? ""}
+                disabled
+                className="w-full px-4 py-2.5 rounded-xl border bg-muted/50 text-sm opacity-60 cursor-not-allowed"
+              />
             </div>
-            <button onClick={handleSave} disabled={saving}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white transition-transform hover:scale-[1.02]"
-              style={{ background: "linear-gradient(135deg, #e11d48, #f59e0b)" }}>
+            {error && <p className="text-sm text-destructive">{error}</p>}
+            <button
+              onClick={handleSave}
+              disabled={saving || !name.trim()}
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white transition-transform hover:scale-[1.02] disabled:opacity-60 disabled:cursor-not-allowed"
+              style={{ background: "linear-gradient(135deg, #e11d48, #f59e0b)" }}
+            >
               {saved ? <><Check className="w-4 h-4" /> Saved!</> :
                saving ? <><Loader2 className="w-4 h-4 animate-spin" /> Saving...</> :
                "Save Changes"}
